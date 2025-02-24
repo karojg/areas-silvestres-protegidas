@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { Payment, columns } from "./columns";
 import { DataTable } from "./data-table";
+import ChoroplethMap from "./map";
 
 export default async function Page() {
   const supabase = await createClient();
@@ -10,6 +11,7 @@ export default async function Page() {
   return (
     <div className="container mx-auto py-10">
       <DataTable columns={columns} data={data} />
+      <ChoroplethMap />
     </div>
   );
 }
