@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "24",
+      "type": "Feature",
+      "properties": {
+        "gml_id": "areas_silvestres_protegidas.25",
+        "codigo": "P01",
+        "nombre_asp": "Arenal",
+        "cat_manejo": "Parque Nacional",
+        "estatus": "Estatal",
+        "siglas_cat": "PN",
+        "nombre_ac": "Area de Conservacion Arenal Huetar Norte",
+        "siglas_ac": "ACAHN",
+        "descripcio": "Area terrestre protegida",
+        "a_creacion": 1991,
+        "n_creacion": "DE_20791",
+        "area": 119452952.003,
+        "area_km": 1194529.52004,
+        "version": "2019-11-19-001"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-84.7245989031395, 10.49366961293142],
+            [-84.6884575963263, 10.389790860204572],
+            [-84.83365661635281, 10.387787576387135],
+            [-84.73597040893793, 10.409398581346563],
+            [-84.7245989031395, 10.49366961293142]
+          ]
+        ]
+      },
+      "bbox": [
+        -84.83365661635281, 10.387787576387135, -84.6884575963263,
+        10.49366961293142
+      ]
+    }
+  ],
+  "bbox": [
+    -84.83365661635281, 10.387787576387135, -84.6884575963263, 10.49366961293142
+  ]
+}
