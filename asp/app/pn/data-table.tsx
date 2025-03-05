@@ -42,8 +42,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export function DataTable({ columns }) {
-  const [data, setData] = React.useState([]);
+export function DataTable({ columns, data, onDataUpdate }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -52,35 +51,31 @@ export function DataTable({ columns }) {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
+  const [tableData, setTableData] = React.useState(data);
+
   React.useEffect(() => {
-    const fetchData = async () => {
-      const { data, error } = await supabase.from("pn").select("*");
-      if (!error) {
-        setData(data);
-      }
-    };
-    fetchData();
-  }, []);
+    setTableData(data); // ✅ Sync local state when new data comes in
+  }, [data]);
 
-  const toggleVisited = async (id, currentVisited) => {
-    const { error } = await supabase
+  const toggleVisited = async (id, visited) => {
+    const newStatus = !visited;
+
+    const { data, error } = await supabase
       .from("pn")
-      .update({ visited: !currentVisited })
-      .eq("id", id);
+      .update({ visited: newStatus }) // ✅ Correctly toggles status
+      .eq("id", id)
+      .select(); // ✅ Fetch updated row to confirm
 
-    console.log({ error });
-    console.log({ id, currentVisited });
-    if (!error) {
-      setData((prevData) =>
-        prevData.map((row) =>
-          row.id === id ? { ...row, visited: !row.visited } : row
-        )
-      );
+    if (error) {
+      console.error("❌ Supabase Update Error:", error);
+    } else {
+      console.log("✅ Supabase Updated Successfully:", data);
+      onDataUpdate(); // ✅ Fetch new data after update
     }
   };
 
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

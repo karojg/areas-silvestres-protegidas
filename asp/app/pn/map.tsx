@@ -1,3 +1,4 @@
+// map.js (ChoroplethMap)
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,91 +11,116 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-const ChoroplethMap = () => {
-  const [geoData, setGeoData] = useState(null);
+export default function ChoroplethMap({ data = [], onDataUpdate }) {
+  const [geoData, setGeoData] = useState([]);
 
   useEffect(() => {
-    const fetchGeoJSON = async () => {
-      const { data, error } = await supabase
-        .from("pn")
-        .select("geojson, visited");
+    if (!Array.isArray(data)) return;
 
-      if (!error && data) {
-        const formattedData = {
-          type: "FeatureCollection",
-          features: data.flatMap((park) => {
-            // Ensure geojson is properly parsed
-            const geojson =
-              typeof park.geojson === "string"
-                ? JSON.parse(park.geojson) // If it's a string, parse it
-                : park.geojson; // Otherwise, use as is
+    const updatedGeoData = data
+      .map((park) => {
+        // park = { id: 123, visited: true, geojson: ... }
+        if (!park.geojson) return null;
 
-            return geojson.features.map((feature) => ({
-              ...feature,
-              properties: { ...feature.properties, visited: park.visited },
-            }));
-          }),
+        let geojsonObject;
+        try {
+          geojsonObject =
+            typeof park.geojson === "string"
+              ? JSON.parse(park.geojson)
+              : park.geojson;
+        } catch (error) {
+          console.error("Error parsing geojson:", error);
+          return null;
+        }
+
+        // Attach DB id + visited to each feature
+        return {
+          ...geojsonObject,
+          features: (geojsonObject.features || []).map((feature) => ({
+            ...feature,
+            properties: {
+              ...feature.properties,
+              visited: park.visited,
+              id: park.id, // *** CRITICAL ***
+            },
+          })),
         };
-        setGeoData(formattedData);
-      }
-    };
-    fetchGeoJSON();
-  }, []);
+      })
+      .filter(Boolean);
 
-  const toggleVisited = async (feature, layer) => {
-    const parkId = feature.properties.id;
-    const newStatus = !feature.properties.visited;
+    setGeoData([...updatedGeoData]);
+  }, [data]);
 
+  // Toggle visited in DB
+  const toggleVisited = async (feature) => {
+    const updatedVisited = !feature.properties.visited;
+    console.log("Toggling visited for feature ID:", feature.properties.id);
     const { error } = await supabase
       .from("pn")
-      .update({ visited: newStatus })
-      .eq("id", parkId);
+      .update({ visited: updatedVisited })
+      .eq("id", feature.properties.id);
 
-    if (!error) {
-      setGeoData((prevGeoData) => {
-        return {
-          ...prevGeoData,
-          features: prevGeoData.features.map((f) =>
-            f.properties.id === parkId
-              ? { ...f, properties: { ...f.properties, visited: newStatus } }
-              : f
-          ),
-        };
-      });
+    if (error) {
+      console.error("Error updating visited status:", error);
+      return;
     }
+
+    // Optimistic update
+    setGeoData((prev) =>
+      prev.map((geojson) => ({
+        ...geojson,
+        features: geojson.features.map((f) =>
+          f.properties.id === feature.properties.id
+            ? {
+                ...f,
+                properties: {
+                  ...f.properties,
+                  visited: updatedVisited,
+                },
+              }
+            : f
+        ),
+      }))
+    );
+
+    // Re-fetch from Supabase
+    onDataUpdate();
   };
 
-  const styleFeature = (feature) => {
-    return {
-      fillColor: feature.properties.visited ? "green" : "red",
-      weight: 2,
-      opacity: 1,
-      color: "white",
-      fillOpacity: 0.7,
-    };
-  };
+  const styleFeature = (feature) => ({
+    fillColor: feature.properties.visited ? "green" : "red",
+    color: "white",
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.7,
+  });
 
   return (
     <MapContainer
       center={[10, -84]}
       zoom={8}
-      style={{ height: "500px", width: "100%" }}
+      style={{ height: 500, width: "100%" }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution="&copy; OpenStreetMap contributors"
       />
-      {geoData && (
+      {geoData.map((geojson, index) => (
         <GeoJSON
-          data={geoData}
+          key={`${index}-${geojson.features?.[0]?.properties?.visited}`}
+          data={geojson}
           style={styleFeature}
           onEachFeature={(feature, layer) => {
-            layer.on("click", () => toggleVisited(feature, layer));
-            layer.bindPopup(
-              `<b>${feature.properties.name}</b><br>Visited: ${feature.properties.visited ? "Yes" : "No"}`
+            console.log(
+              "🟢 Feature visited (live update): %o",
+              feature.properties.visited
             );
-
-            // Show popup on hover
+            layer.on("click", () => toggleVisited(feature));
+            layer.bindPopup(
+              `<b>${feature.properties.nombre_asp || "Unknown"}</b><br>Visited: ${
+                feature.properties.visited ? "Yes" : "No"
+              }`
+            );
             layer.on("mouseover", function () {
               this.openPopup();
             });
@@ -103,9 +129,7 @@ const ChoroplethMap = () => {
             });
           }}
         />
-      )}
+      ))}
     </MapContainer>
   );
-};
-
-export default ChoroplethMap;
+}
