@@ -25,7 +25,7 @@ export default function Page() {
 
   const fetchData = async () => {
     console.log("🔄 Fetching data from Supabase...");
-    const { data, error } = await supabase.from("pn").select();
+    const { data, error } = await supabase.from("national_parks").select();
 
     if (error) {
       console.error("❌ Error fetching data: %o", error);

@@ -61,7 +61,7 @@ export function DataTable({ columns, data, onDataUpdate, onRowClick }) {
     const newStatus = !visited;
 
     const { data, error } = await supabase
-      .from("pn")
+      .from("national_parks")
       .update({ visited: newStatus }) // ✅ Correctly toggles status
       .eq("id", id)
       .select(); // ✅ Fetch updated row to confirm

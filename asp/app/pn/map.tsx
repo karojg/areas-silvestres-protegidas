@@ -57,7 +57,7 @@ const ChoroplethMap = ({ data = [], onDataUpdate, center }) => {
     console.log("🔄 Toggling visited for: %o", feature.properties.nombre_asp);
 
     const { error } = await supabase
-      .from("pn")
+      .from("national_parks")
       .update({ visited: updatedVisited })
       .eq("id", feature.properties.id);
 
