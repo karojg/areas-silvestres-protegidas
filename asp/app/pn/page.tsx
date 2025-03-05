@@ -50,6 +50,7 @@ export default function Page() {
   return (
     <div className="container mx-auto py-10">
       <RealtimeListener onUpdate={fetchData} />
+
       <DataTable
         columns={columns}
         data={datas}
